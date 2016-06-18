@@ -17,6 +17,24 @@ class Cola():
     def desencolar(self):
         if self.vacia(): return None
         return self.datos.pop(0)
+
+class Pila():
+    def __init__(self):
+        self.datos = []
+
+    def vacia(self):
+        return len(self.datos) == 0
+
+    def apilar(self, dato):
+        self.datos.append(dato)
+
+    def desapilar(self):
+        if self.vacia(): return None
+        return self.datos.pop()    
+
+# pila = Pila()
+# if pila.vacia()
+# pila->destruir()
 class Grafo(object):
     '''Clase que representa un grafo. El grafo puede ser dirigido, o no, y puede no indicarsele peso a las aristas
     (se comportara como peso = 1). Implementado como "diccionario de diccionarios"'''
@@ -47,7 +65,7 @@ class Grafo(object):
 
     def __setitem__(self, id, valor):
         '''Agrega un nuevo vertice con el par <id, valor> indicado. ID debe ser de identificador unico del vertice.
-        En caso que el identificador ya se encuentre asociado a un vertice, se actualizara el valor.
+        En caso qe el identificador ya se encuentre asociado a un vertice, se actualizara el valor.
         '''
         if not id in self.__vertices:
             self.__vertices[id] = []
@@ -81,7 +99,7 @@ class Grafo(object):
         self.__vertices[desde].append(hasta)
         #self.__aristas[desde] = {}
         self.__aristas[desde][hasta] = peso 
-        if self.__dirigido :
+        if not self.__dirigido :
             self.__vertices[hasta].append(desde)
          #   self.__aristas[hasta] = {}
             self.__aristas[hasta][desde] = peso
@@ -132,7 +150,7 @@ class Grafo(object):
         for elemento in self.keys():
             visitados[elemento] = False
         fin = False
-        lista = []
+        #lista = []
         cola = Cola()
         cola2 = Cola()
         cola.encolar(inicio)
@@ -140,13 +158,14 @@ class Grafo(object):
         orden =  {}    
         ordencito = 0
         while not cola.vacia() and not fin: 
-            #print("comenzamos")
-            print("veer tope",cola.ver_tope())
+            #print("Principio")
+            #print("veer tope",cola.ver_tope())
             if visitar:
                 if visitar(cola.ver_tope(), padre, orden, extra) == False:
                     fin = True
             if fin : continue
             v = cola.desencolar()
+            #print("DESENCOLADO V : ", v)
             if not visitados[v]:
                 visitados[v] = True
                 if inicio == v :
@@ -155,13 +174,20 @@ class Grafo(object):
                     padre[v] = cola2.desencolar()                    
                 orden[v] = ordencito
                 ordencito += 1
-                lista.append(v)
+                #lista.append(v)
                 cola2.encolar(v)
+                #print("MOSTRAR COLA2", cola2.datos)
+                #print("VISITADOS", visitados)
+                #print("par w en adyacentes")
                 for w in self.__vertices[v]:
+                    #print("EL VERTICE QUE TOMO ES:", w)
                     if not visitados[w]:
                         cola.encolar(w)
+
         return (padre, orden)
 
+
+    #Aun no funciona    
     def dfs(self, visitar = visitar_nulo, extra = None, inicio=None):
         '''Realiza un recorrido DFS dentro del grafo, aplicando la funcion pasada por parametro en cada vertice visitado.
         - visitar: una funcion cuya firma sea del tipo: 
@@ -179,7 +205,19 @@ class Grafo(object):
                 - 'padre' es un diccionario que indica para un identificador, cual es el identificador del vertice padre en el recorrido DFS (None si es el inicio)
                 - 'orden' es un diccionario que indica para un identificador, cual es su orden en el recorrido DFS
         '''
-        raise NotImplementedError()
+        visitados = {}
+        for clave in self.__vertices:
+            visitados[clave] = False
+        padre = {}
+        orden = {}
+        ordencito = 0
+        for w in self.__vertices[inicio]:
+            if not visitados[w]:
+                padre[w] = inicio
+                orden[w] = ordencito[inicio] +1
+                self.dfs(None, None, w)   
+
+        return (padre, orden)
     
     def componentes_conexas(self):
         '''Devuelve una lista de listas con componentes conexas. Cada componente conexa es representada con una lista, con los identificadores de sus vertices.
@@ -243,7 +281,7 @@ grafo.mostrar()
 print("agregar arista vilca -> vargas", grafo.agregar_arista("vilca", "vargas"))
 listel = grafo.bfs(None, None, "vilca")
 print(listel)
-'''
+
 grafo2 = Grafo(True)
 print("agregar vertice A", grafo2.__setitem__("A", 1))
 print("agregar vertice B", grafo2.__setitem__("B", 2))
@@ -268,7 +306,7 @@ def parar(vertice, padre, orden, extra):
     if vertice == "E":
         
         print("toy aka")
-                print("ACA TERMINA LA ITERACION ")
+        print("ACA TERMINA LA ITERACION ")
         return False
 
 
@@ -276,3 +314,77 @@ conti = 0
 l = grafo2.bfs(parar, conti, "D")
 print(l)
 print(conti)
+grafo3 = Grafo(False)
+valor = 3
+grafo3.__setitem__("0", valor)
+grafo3.__setitem__("1", valor)
+grafo3.__setitem__("2", valor)
+grafo3.__setitem__("3", valor)
+grafo3.__setitem__("4", valor)
+grafo3.__setitem__("5", valor)
+#grafo3.__setitem__("I", valor)
+
+print("agrego 0 -1")
+print("agrego 0 -4")
+print("agrego 1 -4")
+print("agrego 1 -2")
+print("agrego 2 -3")
+print("agrego 2 -5")
+grafo3.agregar_arista("0", "1")
+grafo3.agregar_arista("0", "4")
+grafo3.agregar_arista("1", "4")
+grafo3.agregar_arista("1", "2")
+grafo3.agregar_arista("2", "3")
+grafo3.agregar_arista("2", "5")
+
+grafo3.mostrar()
+# (,)
+T = grafo3.bfs(None, None, "1")
+print("PADRES:", T[0])
+print("ORDEN:", T[1])
+'''
+grafo3 = Grafo(True)
+valor = 122
+grafo3.__setitem__("0", valor)
+grafo3.__setitem__("1", valor)
+grafo3.__setitem__("2", valor)
+grafo3.__setitem__("3", valor)
+grafo3.__setitem__("4", valor)
+grafo3.__setitem__("5", valor)
+grafo3.__setitem__("6", valor)
+grafo3.__setitem__("7", valor)
+
+print("agrego 0 - 1")
+print("agrego 1 - 3")
+print("agrego 3 - 2")
+print("agrego 2 - 1")
+print("agrego 3 - 4")
+print("agrego 4 - 5")
+print("agrego 5 - 7")
+print("agrego 7 - 6")
+print("agrego 6 - 4")
+grafo3.agregar_arista("0", "1")
+grafo3.agregar_arista("1", "3")
+grafo3.agregar_arista("3", "2")
+grafo3.agregar_arista("2", "1")
+grafo3.agregar_arista("3", "4")
+grafo3.agregar_arista("4", "5")
+grafo3.agregar_arista("5", "7")
+grafo3.agregar_arista("7", "6")
+grafo3.agregar_arista("6", "4")
+
+grafo3.mostrar()
+
+t = grafo3.bfs(None, None, "0")
+print("PADRES : ", t[0])
+print("ORDEN : ", t[1])
+
+print("BFS TEST")
+
+#t2 = grafo3.dfs(None, None, "0")
+
+#print("PADRES: ", t2[0])
+#print("ORDEN ", t2[1])
+
+
+

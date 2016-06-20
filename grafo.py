@@ -32,6 +32,10 @@ class Pila():
         if self.vacia(): return None
         return self.datos.pop()    
 
+def detener(actual, padre, orden, fin):
+        if actual == fin:
+            return False;
+
 # pila = Pila()
 # if pila.vacia()
 # pila->destruir()
@@ -147,46 +151,48 @@ class Grafo(object):
                 - 'orden' es un diccionario que indica para un identificador, cual es su orden en el recorrido BFS
         '''
         visitados = {}
-        for elemento in self.keys():
+        for elemento in self.__vertices:
             visitados[elemento] = False
         fin = False
-        #lista = []
         cola = Cola()
-        cola2 = Cola()
-        cola.encolar(inicio)
         padre = {}
         orden =  {}    
         ordencito = 0
+        if inicio :
+            padre[inicio] = None
+            cola.encolar(inicio)
+
         while not cola.vacia() and not fin: 
-            #print("Principio")
-            #print("veer tope",cola.ver_tope())
-            if visitar:
-                if visitar(cola.ver_tope(), padre, orden, extra) == False:
-                    fin = True
-            if fin : continue
             v = cola.desencolar()
-            #print("DESENCOLADO V : ", v)
+            if visitar:
+                if visitar(v, padre, orden, extra) == False:
+                    fin = True
+            #orden[v] = ordencito
+            #ordencito += 1
             if not visitados[v]:
-                visitados[v] = True
-                if inicio == v :
-                     padre[v] = None
-                else:
-                    padre[v] = cola2.desencolar()                    
                 orden[v] = ordencito
                 ordencito += 1
-                #lista.append(v)
-                cola2.encolar(v)
-                #print("MOSTRAR COLA2", cola2.datos)
-                #print("VISITADOS", visitados)
-                #print("par w en adyacentes")
+                visitados[v] = True
+                if fin:
+                    continue
                 for w in self.__vertices[v]:
-                    #print("EL VERTICE QUE TOMO ES:", w)
                     if not visitados[w]:
                         cola.encolar(w)
+                        padre[w] = v
 
         return (padre, orden)
 
-
+    def dfs_visitar(self, w, padre, orden, ordencito, visitados):
+        visitados[w] = True
+        ordencito[0] += 1
+        orden[w] = ordencito[0]
+        for v in self.__vertices[w]:
+            if not visitados[v]:
+                
+                padre[v] = w
+                self.dfs_visitar(v, padre, orden, ordencito, visitados)
+        #visitados[w] = True
+        #ordencito[0] += 1       
     #Aun no funciona    
     def dfs(self, visitar = visitar_nulo, extra = None, inicio=None):
         '''Realiza un recorrido DFS dentro del grafo, aplicando la funcion pasada por parametro en cada vertice visitado.
@@ -205,17 +211,19 @@ class Grafo(object):
                 - 'padre' es un diccionario que indica para un identificador, cual es el identificador del vertice padre en el recorrido DFS (None si es el inicio)
                 - 'orden' es un diccionario que indica para un identificador, cual es su orden en el recorrido DFS
         '''
-        visitados = {}
-        for clave in self.__vertices:
-            visitados[clave] = False
         padre = {}
+        visitados = {}
+        if inicio :
+            padre[inicio]= None
+        for clave in self.__vertices:
+            #print("clave", clave)
+            visitados[clave] = False
+        #print(visitados)
         orden = {}
-        ordencito = 0
-        for w in self.__vertices[inicio]:
-            if not visitados[w]:
-                padre[w] = inicio
-                orden[w] = ordencito[inicio] +1
-                self.dfs(None, None, w)   
+        ordencito = [0]
+        
+        #if not visitados[w]:
+        self.dfs_visitar(inicio, padre, orden, ordencito, visitados)   
 
         return (padre, orden)
     
@@ -223,8 +231,24 @@ class Grafo(object):
         '''Devuelve una lista de listas con componentes conexas. Cada componente conexa es representada con una lista, con los identificadores de sus vertices.
         Solamente tiene sentido de aplicar en grafos no dirigidos, por lo que
         en caso de aplicarse a un grafo dirigido se lanzara TypeError'''
-        raise NotImplementedError()
-        
+        if self.__dirigido:      
+            raise TypeError
+        #comp_conexas
+        lista = []
+
+        indice = 0
+        for vertice in self.__vertices:
+            insertar = vertice
+            auxiliar = []
+            t = self.dfs(None, None, vertice)
+            d = t[0]
+            while insertar:            
+                auxiliar.insert(0, insertar)
+                insertar = d[insertar]
+            lista.append(auxiliar)
+
+
+        return lista
     def camino_minimo(self, origen, destino, heuristica=heuristica_nula):
         '''Devuelve el recorrido minimo desde el origen hasta el destino, aplicando el algoritmo de Dijkstra, o bien
         A* en caso que la heuristica no sea nula. Parametros:
@@ -235,7 +259,20 @@ class Grafo(object):
             - Listado de vertices (identificadores) ordenado con el recorrido, incluyendo a los vertices de origen y destino. 
             En caso que no exista camino entre el origen y el destino, se devuelve None. 
         '''
-        raise NotImplementedError()
+        t = self.bfs(detener, destino, origen)
+        d = t[0]
+        #lista = 
+        #while x :
+        #print("padres:", t[0])
+        output = []
+        insertar = destino
+        while insertar:            
+            output.insert(0, insertar)
+            insertar = d[insertar]
+
+        #print("ordenes :", t[1])
+        return output
+        
     
     def mst(self):
         '''Calcula el Arbol de Tendido Minimo (MST) para un grafo no dirigido. En caso de ser dirigido, lanza una excepcion.
@@ -353,7 +390,7 @@ grafo3.__setitem__("4", valor)
 grafo3.__setitem__("5", valor)
 grafo3.__setitem__("6", valor)
 grafo3.__setitem__("7", valor)
-
+grafo3.__setitem__("322", valor)
 print("agrego 0 - 1")
 print("agrego 1 - 3")
 print("agrego 3 - 2")
@@ -372,19 +409,75 @@ grafo3.agregar_arista("4", "5")
 grafo3.agregar_arista("5", "7")
 grafo3.agregar_arista("7", "6")
 grafo3.agregar_arista("6", "4")
-
+grafo3.agregar_arista("322", "4")
 grafo3.mostrar()
+def parar(vertice, padre, orden, extra):
+    extra += 1
+    print(extra)
+    if vertice == "3":
+        
+        print("toy aka")
+        print("ACA TERMINA LA ITERACION ")
+        return False
 
-t = grafo3.bfs(None, None, "0")
-print("PADRES : ", t[0])
+C= 0
+t = grafo3.bfs(parar, C, "0")
+print("PADRES BFS : ", t[0])
 print("ORDEN : ", t[1])
 
 print("BFS TEST")
 
-#t2 = grafo3.dfs(None, None, "0")
+t2 = grafo3.bfs(None, None, "0")
 
-#print("PADRES: ", t2[0])
-#print("ORDEN ", t2[1])
+print("PADRES BFS SIN VISITAR: ", t2[0])
+print("ORDEN SIN VISITAR", t2[1])
 
+r_minimo = grafo3.camino_minimo("0", "5")
 
+print("el cmaino minimo es", r_minimo)
 
+g =  Grafo(False)
+
+g.__setitem__("A", valor)
+g.__setitem__("B", valor)
+g.__setitem__("C", valor)
+g.__setitem__("D", valor)
+g.__setitem__("H", valor)
+g.__setitem__("R", valor)
+g.__setitem__("T", valor)
+print("D-C")
+print("D-B")
+print("B-H")
+print("C-R")
+print("H-D")
+print("H-A")
+print("R-H")
+print("H-T")
+
+g.agregar_arista("D", "C")
+g.agregar_arista("D", "B")
+g.agregar_arista("B", "H")
+g.agregar_arista("C", "R")
+g.agregar_arista("H", "D")
+g.agregar_arista("H", "A")
+g.agregar_arista("R", "H")
+g.agregar_arista("H", "T")
+
+#extra
+g.__setitem__("xxx", valor)
+g.agregar_arista("xxx", "R")
+g.mostrar()
+
+g_t = g.bfs(None, None, "D")
+
+print("PADRES G_T   :", g_t[0])
+print("ORDEN G_t ", g_t[1])
+
+g_t = g.dfs(None, None, "D")
+print("PADRES G_T dfs  :", g_t[0])
+print("ORDEN G_t dfs", g_t[1])
+
+conexas = g.componentes_conexas()
+
+for comp in conexas:
+    print(comp)

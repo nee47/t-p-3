@@ -1,4 +1,4 @@
-# Tp3 
+# Tp3
 import sys
 
 
@@ -12,10 +12,10 @@ if ruta == "1":
 print("ingrese cantidad ")
 n = input()
 
-archivo_txt = open(ruta, encoding= "utf8")
+archivo_txt = open(ruta, "r")
 
 for i in range(0,int(n)):
-	linea = archivo_txt.readline().encode("utf-8")	
+	linea = archivo_txt.readline()	
 	if linea: print(linea) 
 
 

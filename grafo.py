@@ -268,7 +268,7 @@ def parar(vertice, padre, orden, extra):
     if vertice == "E":
         
         print("toy aka")
-                print("ACA TERMINA LA ITERACION ")
+        print("ACA TERMINA LA ITERACION ")
         return False
 
 

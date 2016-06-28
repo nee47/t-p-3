@@ -8,7 +8,7 @@ heuristica_nula = lambda actual,destino: 0
 class Cola():
     def __init__(self):
         self.datos = []
-
+    
     def vacia(self):
         return len(self.datos) == 0
 
@@ -105,13 +105,19 @@ class Grafo(object):
             - Peso: valor de peso que toma la conexion. Si no se indica, valdra 1.
             Si el grafo es no-dirigido, tambien agregara la arista reciproca.
         '''
+        if desde == hasta:
+            return False
         self.__vertices[desde].append(hasta)
         #self.__aristas[desde] = {}
-        self.__aristas[desde][hasta] = peso 
+        #nuevo_dic = {hasta : peso}
+        self.__aristas[(desde, hasta)] = peso 
+        #if desde == "Argentina":
+            #print("len de arg aristas", len(self.__aristas[desde]))
+            #print("hasta in aristas desde", hasta in self.__aristas[desde])
         if not self.__dirigido :
             self.__vertices[hasta].append(desde)
          #   self.__aristas[hasta] = {}
-            self.__aristas[hasta][desde] = peso
+            self.__aristas[(desde, hasta)] = peso
         return True
 
     def borrar_arista(self, desde, hasta):
@@ -249,6 +255,8 @@ class Grafo(object):
             - Listado de vertices (identificadores) ordenado con el recorrido, incluyendo a los vertices de origen y destino. 
             En caso que no exista camino entre el origen y el destino, se devuelve None. 
         '''
+        #improvisando
+        #fin improvisando
         visitado = {}
         distancia = {}
         heap_minimo = []
@@ -260,7 +268,7 @@ class Grafo(object):
         cantidad = 0
         distancia[origen] = 0;
         camino[origen] = (1, None)
-        while len(heap_minimo) != 0 and cantidad < 999999:
+        while heap_minimo :
             u = heapq.heappop(heap_minimo)
             if not visitado[u[1]]:
                 visitado[u[1]] = True
@@ -269,24 +277,26 @@ class Grafo(object):
                     if u[1] == destino:
                         break
             cantidad += 1
-             
+            if distancia[u[1]] > 20:
+                continue
             for w in self.__vertices[u[1]]:
                 #if self.__aristas[w][
                 #peso = self.__aristas[u[1]][w]
                 if not visitado[w]:
                     #if self.__aristas[u][w] < distancia[w]: 
                      #   distancia[u] = self.__aristas[u][w]  #+ heuristica
-                    
-                    heapq.heappush(heap_minimo, (u[0]+cantidad,
+                    #distancia[w] = distancia[u[1]] + self.__aristas[(u[1], w)]
+                    peso = self.__aristas[(u[1], w)] + distancia[u[1]]
+                    heapq.heappush(heap_minimo, (peso ,
                                                  w, u[1]))
-                    #distancia[w] = distancia[u[1]] + cantidad
+                    distancia[w] = peso
                     #cantidad += 1
                         #distancia[]
         
         
                     
         # {'H:(0, A)  }
-        print("distancia destino", distancia[destino])
+        print("distancia destino", distancia[destino], "cantidad", cantidad)
         if destino not in camino :
             print("no se encuentra camino")
             return None
@@ -297,7 +307,7 @@ class Grafo(object):
         #csc= input()
         #print("wa comenzar a empaquetar")
         while actual :
-            print(actual)
+            #print(actual)
             lista_camino.insert(0, actual)
             #print(actual)
             c = camino.get(actual)
@@ -328,92 +338,125 @@ class Grafo(object):
         '''Calcula el Arbol de Tendido Minimo (MST) para un grafo no dirigido. En caso de ser dirigido, lanza una excepcion.
         Devuelve: un nuevo grafo, con los mismos vertices que el original, pero en forma de MST.'''
         raise NotImplementedError()
-
-
+    
+    #  {clave : [clave1, clave2, clave3]} 
+    #  {clave : {Clave : peso1} }
     def mostrar(self):
-        print("GRAFO VERTICES", self.__vertices)
+        #print("GRAFO VERTICES", self.__vertices)
         #print("GRAFO DATOS", self.__datos)
         #print("GRAFO ARISTAS", self.__aristas)
         print("cantidad de vertices ", self.__len__())
-        #print("cantidad de aristas", len(self.__aristas()))
+        ## extra
+        cont =0 
+        cant = 0
+        #for cada_elemento in self.__aristas:
+            #if cada_elemento[0] ==  "Argentina" and cada_elemento[1] == "polacos":
+                #print(cada_elemento) 
+            #if cant == 15: break
+            #cant += 1
+        print("cantidad de aritas con mas de 1 elemento", cant)
+       # print("longitud de arg con vertices", len(self.__vertices["Argentina"]))
+        #print("longitud de arg con aristas", len(self.__aristas))
+        #fin extra
+        print("cantidad de aristas", len(self.__aristas))
 # Canaan Red Bull New York
-def lista_lineas(archivo):
-	linea = archivo.readline()
-	longitud = len(linea)
-	vec_linea = linea[0: longitud-1].split("<")
-	fin = vec_linea[0].find(">")
-	vec_linea.insert(0, vec_linea[0][0: fin])
-	vec_linea[1] = vec_linea[1][fin+1:]
-	return vec_linea
 
+
+def lista_lineas(archivo, opcion= False):
+    linea = archivo.readline()
+	#longitud = len(linea)
+    vec_linea = []
+    if opcion == True: 
+        vec_linea = linea.split("<")
+    #print(vec_lineas)
+    fin = vec_linea[0].find(">")
+    vec_linea.insert(0, vec_linea[0][0: fin])
+    if opcion == True: vec_linea[1] = vec_linea[1][fin+1:]
+    #return vec_linea
+    #dic[]
+    return vec_linea
+
+
+def cargar_grafo(grafo, ruta, n):
+    archivo_txt = open(ruta, "r")
+    vec = []
+    dic = {}
+    for x in range(int(n)):
+        vec = lista_lineas(archivo_txt, True)
+        dic[vec[0]] = vec[1:]
+        grafo.__setitem__(vec[0], n)
+        
+    archivo_txt.close()
+  #  archivo_txt = open(ruta, "r")
+    vertices = grafo.keys()
+    for v in vertices:
+        for w in dic[v]:
+            if grafo.__contains__(w):
+                grafo.agregar_arista(v, w)
+
+def evaluar(grafo, accion, linea):
+    print(linea)
+    if accion == "camino_mas_corto":
+        camino_corto(grafo, linea)
+   # print(linea)
+
+
+def camino_corto(grafo, origen_destino):
+    aux = origen_destino.split(",")
+    if len(aux) < 2:
+        print("uso: camino_mas_corto <Articulo1>,<Articulo2>")
+        return 1
+    aux[0] = aux[0][1:]
+    if not grafo.__contains__(aux[0]) or not grafo.__contains__(aux[1]):
+        print("Alguno de los articulos no se encuentran")
+        return 1
+    inicial = time()
+    l = grafo.camino_minimo(aux[0], aux[1], None)
+    print(l)
+    tiempo_ejecucion  = time() - inicial
+    print("el tiempo de la busqueda fue %0.10f s"% tiempo_ejecucion)
 
 
 # Main
+# 10 000 - 3.39s 
+# 2da imple 15 000 - 5.9s
 
-print("Se carga por defecto Wiki-parsed.txt")
-#ruta = input()
-#if ruta == "1": 
-ruta = "Wiki-parsed.txt"
-print(ruta)
-print("ingrese cantidad de articulos deseados ")
-n = input()
-inicial = time()
-archivo_txt = open(ruta, "r")
-grafo = Grafo(True)
-valor = 1
-for x in range(0, int(n)):
-	vec = lista_lineas(archivo_txt)
-	#print(vec)
-	#grafo.__setitem__(vec[0], valor)
-	for elemento in vec:
-		grafo.__setitem__(elemento, valor)
-		grafo.agregar_arista(vec[0], elemento)
-		
-# extra .....{
-print("TERMINE DE CARGAR EL GRAFO ")
-#grafo.mostrar()
-#raise 0
+def tp3_main():
+    if len(sys.argv) !=  3:
+        print("Uso : ./tp3.py <argumento>")
+        return 1
+    if not sys.argv[2].isdigit():
+        print("Cantidad no valida !")
+        return 1
+            
+            # Archivo txt
+        
+    ruta = ""
+    if sys.argv[1] == "wiki":
+        ruta = "Wiki-parsed.txt"
+    else:
+        ruta = sys.argv[1]
 
-#... finextra{
-vert = grafo.keys()
-#grafo.mostrar()
-print("actualmente hay ", grafo.__len__(),"vertices")
-#print("INGRESA CUANTOS VERITCES VALIDOS DESEAS VER")
-vert_cant= 0 #input()
-cun = 0
-cm= 0
-while cm < grafo.__len__() and cun< int(vert_cant):
-	adya = grafo.adyacentes(vert[cm])
-	while(cm+2 < grafo.__len__() and len(adya) < 10):
-		cm += 1
-		adya = grafo.adyacentes(vert[cm])
-	#cm += 1
-	cun += 1	
-	print(vert[cm])
-	cm += 1
 
-#print("Ingresa un vertice para  ver sus adyacentes")
-#ady = input()
-#axl = grafo.adyacentes(ady)
-#print(axl)
+    print(ruta)
+    inicial = time()
+    grafo = Grafo(True)
+    n = int(sys.argv[2])
+    cargar_grafo(grafo, ruta, n )
+    grafo.mostrar()
+    print("TERMINE DE CARGAR EL GRAFO ")
 
-tiempo_ejecucion = time()- inicial
-print("El tiempo de carga fue %0.10f s"% tiempo_ejecucion)
+    tiempo_ejecucion = time()- inicial
+    print("El tiempo de carga fue %0.10f s"% tiempo_ejecucion)
+    comando = input()
+    
+    while (comando != "fin"):
+        accion = comando.split(" ")[0]
+        
+        evaluar(grafo, accion, comando[len(accion):])
+        
+        comando = input()
+        
 
-print("INGRESA ORIGEN")
-origen = input()
-print("Ingresa destino")
-destino = input()
-#while origen != "FIN***" and destino != "FIN***": 
-while not grafo.__contains__(origen) or not grafo.__contains__(destino):
-    print("INGRESA ORIGEN")
-    origen = input()
-    print("Ingresa destino")
-    destino = input()#kga
-inicial = time()
-l = grafo.camino_minimo(origen, destino, None)
-print(l)
-
-archivo_txt.close()
-tiempo_ejecucion  = time() - inicial
-print("el tiempo de la busqueda fue %0.10f s"% tiempo_ejecucion)
+print("empezando")
+tp3_main()

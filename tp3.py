@@ -27,7 +27,7 @@ class Pila():
     def __init__(self):
         self.datos = []
 
-    def vacia(self):
+    def vacia(self)    :
         return len(self.datos) == 0
 
     def apilar(self, dato):
@@ -384,7 +384,7 @@ def cargar_grafo(grafo, ruta, n):
     for x in range(int(n)):
         vec = lista_lineas(archivo_txt, True)
         dic[vec[0]] = vec[1:]
-        grafo.__setitem__(vec[0], n)
+        grafo.__setitem__(vec[0], 0)
         
     archivo_txt.close()
   #  archivo_txt = open(ruta, "r")
@@ -395,11 +395,11 @@ def cargar_grafo(grafo, ruta, n):
                 grafo.agregar_arista(v, w)
 
 def evaluar(grafo, accion, linea):
-    print(linea)
     if accion == "camino_mas_corto":
         camino_corto(grafo, linea)
-   # print(linea)
-
+    # print(linea)
+    if accion == "calcular_pagerank":
+        calcular_pagerank_k(grafo, linea)
 
 def camino_corto(grafo, origen_destino):
     aux = origen_destino.split(",")
@@ -415,8 +415,41 @@ def camino_corto(grafo, origen_destino):
     print(l)
     tiempo_ejecucion  = time() - inicial
     print("el tiempo de la busqueda fue %0.10f s"% tiempo_ejecucion)
+d = 0.85
 
 
+def pagerank(grafo, pRank):
+   # pr = (1-d)/N  + d()
+    vertices = grafo.keys()
+    N= len(vertices)
+    print (N," y ",  d)
+    #pRank = {}
+    for x in vertices : 
+        #if len(grafo.adyacentes(x)) == 0 :
+        pRank[x] = (1-d)/N
+
+    max = 0
+    for x in vertices :
+        suma = 0
+        for adyacentes in grafo.adyacentes(x):
+            tam =  len(grafo.adyacentes(adyacentes))
+            if tam > 0 :    
+                suma += (pRank[adyacentes])/ tam
+        pRank[x] = (suma*d) + ((1-d)/N)  +d  
+        if pRank[x] > max :
+            max = pRank[x]
+    print("maximo pagrank es ", max)
+    #for x in vertices:
+        
+def calcular_pagerank_k(grafo, linea):
+    k = int(linea[1:])
+    inicial = time()
+    pRank = {}
+    pagerank(grafo, pRank)
+    t_ejecucion = time() - inicial
+    print("Tiempo de ejecucion calcular pr FUE %0.10f" % t_ejecucion)
+    #print(pRank)
+        
 # Main
 # 10 000 - 3.39s 
 # 2da imple 15 000 - 5.9s
@@ -460,3 +493,4 @@ def tp3_main():
 
 print("empezando")
 tp3_main()
+

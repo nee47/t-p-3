@@ -256,36 +256,46 @@ class Grafo(object):
         visitado = {}
         distancia = {}
         heap_minimo = []
+        pe = 0
         camino = {} # {'A': (peso, Vertice , padre)}
         for elemento in self.__vertices:
             visitado[elemento] = False
-            distancia[elemento] =  999
+            if not (origen, elemento) in self.__aristas:
+                distancia[elemento] =  999
+            else:
+                distancia[elemento] = self.__aristas[(origen, elemento)]
+        
         heapq.heappush(heap_minimo, (0, origen, None))
         cantidad = 0
         distancia[origen] = 0;
         camino[origen] = (1, None)
         while heap_minimo :
             u = heapq.heappop(heap_minimo)
+            if pe < u[0]:
+                pe = u[0]
+
             if not visitado[u[1]]:
                 visitado[u[1]] = True
                 if u[1] != origen :
                     camino[u[1]] = u[0],u[2]
                     if u[1] == destino:
+                        print("ya lo encontre")
                         break
                 cantidad += 1
-                if distancia[u[1]] > 20:
+                if heuristica and heuristica(u[1], destino) > distancia[u[1]]:
                     continue
                 for w in self.__vertices[u[1]]:
+                        
+                 #       peso = self.__aristas[(u[1], w)] + distancia[u[1]]
                     if not visitado[w]:
-                        peso = self.__aristas[(u[1], w)] + distancia[u[1]]
-                        heapq.heappush(heap_minimo, (peso ,
-                                                 w, u[1]))
-                        distancia[w] = peso
-                    #cantidad += 1
-                        #distancia[]
-        
-        
+                        if distancia[w] >= distancia[u[1]]+ self.__aristas[(u[1], w)] :
+                            distancia[w] = distancia[u[1]] + self.__aristas[(u[1], w)]
+                            # camino[w] = u[0],u[2]
+                            heapq.heappush(heap_minimo, (distancia[w],w, u[1]))
                     
+                            
+        
+        print("maxima distancia ", pe)
         # {'H:(0, A)  }
         print("distancia destino", distancia[destino], "cantidad", cantidad)
         if destino not in camino :
@@ -295,8 +305,7 @@ class Grafo(object):
         #return None
         lista_camino = []
         actual = destino
-        #csc= input()
-        #print("wa comenzar a empaquetar")
+        print("llegue con peso", camino.get(actual)[0])
         while actual :
             #print(actual)
             lista_camino.insert(0, actual)

@@ -276,7 +276,7 @@ class Grafo(object):
                         peso = self.__aristas[(u[1], w)] + distancia[u[1]]
                         heapq.heappush(heap_minimo, (peso ,
                                                  w, u[1]))
-                        distancia[w] = peso
+                        distancia[w] = distancia[u[1]] +1 #peso
                     #cantidad += 1
                         #distancia[]
         
@@ -291,8 +291,6 @@ class Grafo(object):
         #return None
         lista_camino = []
         actual = destino
-        #csc= input()
-        #print("wa comenzar a empaquetar")
         while actual :
             #print(actual)
             lista_camino.insert(0, actual)
@@ -417,5 +415,5 @@ g_t = g.dfs(None, None, "D")
 print("PADRES G_T dfs  :", g_t[0])
 print("ORDEN G_t dfs", g_t[1])
 
-cam_min = g.camino_minimo("D","B")
+cam_min = g.camino_minimo("D","T")
 print("CAMINO MINIMO ",cam_min)

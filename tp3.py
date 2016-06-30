@@ -61,7 +61,7 @@ class Grafo(object):
     
     def __iter__(self):
         '''Devuelve un iterador de vertices, sin ningun tipo de relacion entre los consecutivos'''
-        raise NotImplementedError()
+        return iter(self.keys())
         
     def keys(self):
         '''Devuelve una lista de identificadores de vertices. Iterar sobre ellos es equivalente a iterar sobre el grafo.'''
@@ -108,15 +108,9 @@ class Grafo(object):
         if desde == hasta:
             return False
         self.__vertices[desde].append(hasta)
-        #self.__aristas[desde] = {}
-        #nuevo_dic = {hasta : peso}
         self.__aristas[(desde, hasta)] = peso 
-        #if desde == "Argentina":
-            #print("len de arg aristas", len(self.__aristas[desde]))
-            #print("hasta in aristas desde", hasta in self.__aristas[desde])
         if not self.__dirigido :
             self.__vertices[hasta].append(desde)
-         #   self.__aristas[hasta] = {}
             self.__aristas[(desde, hasta)] = peso
         return True
 
@@ -126,18 +120,20 @@ class Grafo(object):
            En caso de no existir la arista, se lanzara ValueError.
         '''
         self.__vertices[desde].remove(hasta)
-        if self.__dirigido :
+        del self.__aristas[(desde, hasta)]
+        if not self.__dirigido :
             self.__vertices[hasta].remove(desde)
-        del self.__aristas[desde][hasta]
+            self.__aristas[(hasta, desde)]
+        #del self.__aristas[desde][hasta]
 
     def obtener_peso_arista(self, desde, hasta):
         '''Obtiene el peso de la arista que va desde el vertice 'desde', hasta el vertice 'hasta'. Parametros:
             - desde y hasta: identificadores de vertices dentro del grafo. Si alguno de estos no existe dentro del grafo, lanzara KeyError.
             En caso de no existir la union consultada, se devuelve None.
         '''
-        if hasta not in self.__vertices[desde] : #or desde not in self.__vertices[hasta]:         
+        if hasta not in self.__vertices[desde] : 
             return None
-        return self.__aristas[desde][hasta]
+        return self.__aristas[(desde, hasta)]
         
     def adyacentes(self, id):
         '''Devuelve una lista con los vertices (identificadores) adyacentes al indicado. Si no existe el vertice, se lanzara KeyError'''
@@ -276,20 +272,15 @@ class Grafo(object):
                     camino[u[1]] = u[0],u[2]
                     if u[1] == destino:
                         break
-            cantidad += 1
-            if distancia[u[1]] > 20:
-                continue
-            for w in self.__vertices[u[1]]:
-                #if self.__aristas[w][
-                #peso = self.__aristas[u[1]][w]
-                if not visitado[w]:
-                    #if self.__aristas[u][w] < distancia[w]: 
-                     #   distancia[u] = self.__aristas[u][w]  #+ heuristica
-                    #distancia[w] = distancia[u[1]] + self.__aristas[(u[1], w)]
-                    peso = self.__aristas[(u[1], w)] + distancia[u[1]]
-                    heapq.heappush(heap_minimo, (peso ,
+                cantidad += 1
+                if distancia[u[1]] > 20:
+                    continue
+                for w in self.__vertices[u[1]]:
+                    if not visitado[w]:
+                        peso = self.__aristas[(u[1], w)] + distancia[u[1]]
+                        heapq.heappush(heap_minimo, (peso ,
                                                  w, u[1]))
-                    distancia[w] = peso
+                        distancia[w] = peso
                     #cantidad += 1
                         #distancia[]
         
@@ -317,22 +308,6 @@ class Grafo(object):
         #print("Distancias", distancia)
         return lista_camino
  
-        '''d = t[0]
-        #lista = 
-        #while x :
-        #print("padres:", t[0])
-        output = []
-        fin = False
-        insertar = destino
-        #print(t[0])
-        while insertar:            
-            output.insert(0, insertar)
-            
-            insertar = d.get(insertar)
-
-        
-        return output
-        '''
     
     def mst(self):
         '''Calcula el Arbol de Tendido Minimo (MST) para un grafo no dirigido. En caso de ser dirigido, lanza una excepcion.
@@ -394,12 +369,18 @@ def cargar_grafo(grafo, ruta, n):
             if grafo.__contains__(w):
                 grafo.agregar_arista(v, w)
 
-def evaluar(grafo, accion, linea):
+def evaluar(grafo, accion, linea, pRank):
     if accion == "camino_mas_corto":
         camino_corto(grafo, linea)
     # print(linea)
     if accion == "calcular_pagerank":
-        calcular_pagerank_k(grafo, linea)
+        calcular_pagerank_k(grafo, linea, pRank)
+    
+    if accion == "mostrar_pagerank":
+        mostrar_pagerank(grafo, linea, pRank)
+
+    if accion == "mostrar_top_pagerank":
+        mostrar_top_pagerank(grafo, linea, pRank)
 
 def camino_corto(grafo, origen_destino):
     aux = origen_destino.split(",")
@@ -418,45 +399,70 @@ def camino_corto(grafo, origen_destino):
 d = 0.85
 
 
-def pagerank(grafo, pRank):
+def pagerank(grafo, pRank, k):
    # pr = (1-d)/N  + d()
     vertices = grafo.keys()
     N= len(vertices)
-    print (N," y ",  d)
     #pRank = {}
     for x in vertices : 
         #if len(grafo.adyacentes(x)) == 0 :
         pRank[x] = (1-d)/N
+     
+    #max = 0
+    for i in range(k):
+        for x in vertices :
+            suma = 0
+            L = len(grafo.adyacentes(x))
+            for adyacentes in grafo.adyacentes(x):
+                pRank[adyacentes] += d*pRank[x] / L
+ 
+                #pRank[] = (suma*d) + ((1-d)/N)  +d  
+               # if pRank[adyacentes] > max :
+                #    max = pRank[adyacentes]
 
-    max = 0
-    for x in vertices :
-        suma = 0
-        for adyacentes in grafo.adyacentes(x):
-            tam =  len(grafo.adyacentes(adyacentes))
-            if tam > 0 :    
-                suma += (pRank[adyacentes])/ tam
-        pRank[x] = (suma*d) + ((1-d)/N)  +d  
-        if pRank[x] > max :
-            max = pRank[x]
-    print("maximo pagrank es ", max)
-    #for x in vertices:
+
+    
         
-def calcular_pagerank_k(grafo, linea):
+def calcular_pagerank_k(grafo, linea, pRank):
     k = int(linea[1:])
     inicial = time()
-    pRank = {}
-    pagerank(grafo, pRank)
+    #pRank = {}
+    pagerank(grafo, pRank, k)
     t_ejecucion = time() - inicial
     print("Tiempo de ejecucion calcular pr FUE %0.10f" % t_ejecucion)
     #print(pRank)
         
+def mostrar_pagerank(grafo, linea, pRank):
+    
+#    print("Tiempo de ejecucion calcular pr FUE %0.10f" % t_ejecucion)
+    print("page rank :", pRank[linea[1:]]) 
+
+
+def mostrar_top_pagerank(grafo, linea, pRank):
+    
+    k = linea[1:]
+    if not k.isdigit():
+        print("la cantidad no es valida")
+    heap = []
+        
+    for vertices in pRank:
+        
+        #if len(heap) <= int(k):
+        if len(heap) <= int(k) or pRank[vertices] > heap[0][0]:
+            heapq.heappush(heap, (pRank[vertices], vertices))
+            if pRank[vertices] > heap[0][0]:
+                heapq.heappop(heap)
+
+    while len(heap) != 0 :
+        print(heapq.heappop(heap))
+
 # Main
 # 10 000 - 3.39s 
 # 2da imple 15 000 - 5.9s
 
 def tp3_main():
     if len(sys.argv) !=  3:
-        print("Uso : ./tp3.py <argumento>")
+        print("Uso : ./tp3.py <archivo> <cantidad>")
         return 1
     if not sys.argv[2].isdigit():
         print("Cantidad no valida !")
@@ -471,14 +477,13 @@ def tp3_main():
         ruta = sys.argv[1]
 
 
-    print(ruta)
     inicial = time()
     grafo = Grafo(True)
     n = int(sys.argv[2])
     cargar_grafo(grafo, ruta, n )
-    grafo.mostrar()
-    print("TERMINE DE CARGAR EL GRAFO ")
-
+    #grafo.mostrar()
+    #print("TERMINE DE CARGAR EL GRAFO ")
+    pRank = {}
     tiempo_ejecucion = time()- inicial
     print("El tiempo de carga fue %0.10f s"% tiempo_ejecucion)
     comando = input()
@@ -486,7 +491,7 @@ def tp3_main():
     while (comando != "fin"):
         accion = comando.split(" ")[0]
         
-        evaluar(grafo, accion, comando[len(accion):])
+        evaluar(grafo, accion, comando[len(accion):], pRank)
         
         comando = input()
         

@@ -57,7 +57,7 @@ class Grafo(object):
     
     def __iter__(self):
         '''Devuelve un iterador de vertices, sin ningun tipo de relacion entre los consecutivos'''
-        raise NotImplementedError()
+        return iter(self.keys())
         
     def keys(self):
         '''Devuelve una lista de identificadores de vertices. Iterar sobre ellos es equivalente a iterar sobre el grafo.'''
@@ -101,13 +101,13 @@ class Grafo(object):
             - Peso: valor de peso que toma la conexion. Si no se indica, valdra 1.
             Si el grafo es no-dirigido, tambien agregara la arista reciproca.
         '''
+        if desde == hasta:
+            return False
         self.__vertices[desde].append(hasta)
-        #self.__aristas[desde] = {}
-        self.__aristas[desde][hasta] = peso 
+        self.__aristas[(desde, hasta)] = peso 
         if not self.__dirigido :
             self.__vertices[hasta].append(desde)
-         #   self.__aristas[hasta] = {}
-            self.__aristas[hasta][desde] = peso
+            self.__aristas[(desde, hasta)] = peso
         return True
 
     def borrar_arista(self, desde, hasta):
@@ -116,18 +116,20 @@ class Grafo(object):
            En caso de no existir la arista, se lanzara ValueError.
         '''
         self.__vertices[desde].remove(hasta)
-        if self.__dirigido :
+        del self.__aristas[(desde, hasta)]
+        if not self.__dirigido :
             self.__vertices[hasta].remove(desde)
-        del self.__aristas[desde][hasta]
+            self.__aristas[(hasta, desde)]
+        #del self.__aristas[desde][hasta]
 
     def obtener_peso_arista(self, desde, hasta):
         '''Obtiene el peso de la arista que va desde el vertice 'desde', hasta el vertice 'hasta'. Parametros:
             - desde y hasta: identificadores de vertices dentro del grafo. Si alguno de estos no existe dentro del grafo, lanzara KeyError.
             En caso de no existir la union consultada, se devuelve None.
         '''
-        if hasta not in self.__vertices[desde] : #or desde not in self.__vertices[hasta]:         
+        if hasta not in self.__vertices[desde] : 
             return None
-        return self.__aristas[desde][hasta]
+        return self.__aristas[(desde, hasta)]
         
     def adyacentes(self, id):
         '''Devuelve una lista con los vertices (identificadores) adyacentes al indicado. Si no existe el vertice, se lanzara KeyError'''
@@ -183,15 +185,17 @@ class Grafo(object):
 
         return (padre, orden)
 
-    def dfs_visitar(self, w, padre, orden, ordencito, visitados):
+    def dfs_visitar(self, w, padre, orden, ordencito, visitados, inicio):
         visitados[w] = True
         ordencito[0] += 1
         orden[w] = ordencito[0]
         for v in self.__vertices[w]:
             if not visitados[v]:
-                
-                padre[v] = w
-                self.dfs_visitar(v, padre, orden, ordencito, visitados)
+                if w != inicio:
+                    padre[v] = w
+                else:
+                    padre[v] = None
+                self.dfs_visitar(v, padre, orden, ordencito, visitados, inicio )
         #visitados[w] = True
         #ordencito[0] += 1       
     #Aun no funciona    
@@ -212,19 +216,17 @@ class Grafo(object):
                 - 'padre' es un diccionario que indica para un identificador, cual es el identificador del vertice padre en el recorrido DFS (None si es el inicio)
                 - 'orden' es un diccionario que indica para un identificador, cual es su orden en el recorrido DFS
         '''
-        padre = {}
         visitados = {}
-        if inicio :
-            padre[inicio]= None
         for clave in self.__vertices:
             #print("clave", clave)
             visitados[clave] = False
         #print(visitados)
+        padre = {}
         orden = {}
         ordencito = [0]
         
         #if not visitados[w]:
-        self.dfs_visitar(inicio, padre, orden, ordencito, visitados)   
+        self.dfs_visitar(inicio, padre, orden, ordencito, visitados, inicio)   
 
         return (padre, orden)
     
@@ -232,24 +234,8 @@ class Grafo(object):
         '''Devuelve una lista de listas con componentes conexas. Cada componente conexa es representada con una lista, con los identificadores de sus vertices.
         Solamente tiene sentido de aplicar en grafos no dirigidos, por lo que
         en caso de aplicarse a un grafo dirigido se lanzara TypeError'''
-        if self.__dirigido:      
-            raise TypeError
-        #comp_conexas
-        lista = []
-
-        indice = 0
-        for vertice in self.__vertices:
-            insertar = vertice
-            auxiliar = []
-            t = self.dfs(None, None, vertice)
-            d = t[0]
-            while insertar:            
-                auxiliar.insert(0, insertar)
-                insertar = d[insertar]
-            lista.append(auxiliar)
-
-
-        return lista
+        raise NotImplementedError()
+    
 
     def camino_minimo(self, origen, destino, heuristica=heuristica_nula):
         '''Devuelve el recorrido minimo desde el origen hasta el destino, aplicando el algoritmo de Dijkstra, o bien
@@ -261,6 +247,8 @@ class Grafo(object):
             - Listado de vertices (identificadores) ordenado con el recorrido, incluyendo a los vertices de origen y destino. 
             En caso que no exista camino entre el origen y el destino, se devuelve None. 
         '''
+        #improvisando
+        #fin improvisando
         visitado = {}
         distancia = {}
         heap_minimo = []
@@ -271,43 +259,52 @@ class Grafo(object):
         heapq.heappush(heap_minimo, (0, origen, None))
         cantidad = 0
         distancia[origen] = 0;
-        while len(heap_minimo) != 0 and cantidad < 999 :
+        camino[origen] = (1, None)
+        while heap_minimo :
             u = heapq.heappop(heap_minimo)
-            print(u)
             if not visitado[u[1]]:
-                visitado[u] = True
-                camino[u[1]] = u[0],u[2]
+                visitado[u[1]] = True
+                if u[1] != origen :
+                    camino[u[1]] = u[0],u[2]
+                    if u[1] == destino:
+                        break
                 cantidad += 1
-            if u[1] == destino:
-                break
-            #cantidad += 1
-            for w in self.__vertices[u[1]]:
-                #if self.__aristas[w][
-                #peso = self.__aristas[u][w]
-                if not visitado[w]:
-                    #if self.__aristas[u][w] < distancia[w]: 
-                     #   distancia[u] = self.__aristas[u][w]  #+ heuristica
-                    
-                    heapq.heappush(heap_minimo, (u[0]+cantidad,
+                if distancia[u[1]] > 20:
+                    continue
+                for w in self.__vertices[u[1]]:
+                    if not visitado[w]:
+                        peso = self.__aristas[(u[1], w)] + distancia[u[1]]
+                        heapq.heappush(heap_minimo, (peso ,
                                                  w, u[1]))
-                    distancia[w] = distancia[u[1]] + cantidad
+                        distancia[w] = peso
                     #cantidad += 1
-                       #distancia[]
+                        #distancia[]
         
-        print("distancia desstino",distancia[destino])
-        print(camino)
-        if distancia[destino] == 999:
-            return None
+        
+                    
         # {'H:(0, A)  }
+        print("distancia destino", distancia[destino], "cantidad", cantidad)
+        if destino not in camino :
+            print("no se encuentra camino")
+            return None
+       # print(camino)
+        #return None
         lista_camino = []
         actual = destino
+        #csc= input()
         #print("wa comenzar a empaquetar")
         while actual :
+            #print(actual)
             lista_camino.insert(0, actual)
             #print(actual)
-            actual = camino[actual][1]
+            c = camino.get(actual)
+            if c : 
+                actual = c[1]
+            else : actual = None
         #print("Distancias", distancia)
         return lista_camino
+ 
+
     
     def mst(self):
         '''Calcula el Arbol de Tendido Minimo (MST) para un grafo no dirigido. En caso de ser dirigido, lanza una excepcion.
@@ -321,105 +318,8 @@ class Grafo(object):
         #print("GRAFO ARISTAS", self.__aristas)
         print("cantidad vertices ", self.__len__())
         print("CANTIDAD E ARISTAS PRRO", len(self.__aristas))
-'''grafo = Grafo(False)
-
-print("agrego clave joseph valor 1", grafo.__setitem__("joseph", 5200))
-print("ahora joseph pertence al grafo", grafo.__contains__("joseph"))
-print("cantidad dle grafo es ", grafo.__len__())
-print("agrego clave vilca valor 2", grafo.__setitem__("vilca", 2))
-print("muestro el grafo: ", grafo.mostrar())
-print("agrego clave vilca de nuevo", grafo.__setitem__("vilca", 4))
-grafo.mostrar()
-print("Muestro las claves con keys", grafo.keys())
-print("get valor joseph", grafo.__getitem__("joseph"))
-print("get valor vilca", grafo.__getitem__("vilca"))
-print("agregar arista joseph->vilca", grafo.agregar_arista("joseph", "vilca", 40))
-print("agregar vertice vargas", grafo.__setitem__("vargas", 10))
-grafo.mostrar()
-#print("agrgar arista invalida joseph-> X", grafo.agregar_arista("joseph", "X"))
-print("El peso de la arista joseph->vilca", grafo.obtener_peso_arista("joseph", "vilca"))
-print("Peso de arista que no ecsiste", grafo.obtener_peso_arista("joseph", "vargas"))
-print("borrar arista joseph -> vilca", grafo.borrar_arista("joseph", "vilca"))
-grafo.mostrar()
-print("cantidad dde vertices :", grafo.__len__())
-print("Vertices adyacentes a joseph", grafo.adyacentes("joseph"))
-print("agregar arista joseph->vilca", grafo.agregar_arista("joseph", "vilca", 100))
-print("agregar arista joseph->vargas", grafo.agregar_arista("joseph", "vargas", 200))
-grafo.mostrar()
-print("vertices adyacentes a joseph", grafo.adyacentes("joseph"))
-print("obtener peso arista joseph->vargas", grafo.obtener_peso_arista("joseph", "vargas"))
-#print("eliminar vertice Joseph ", grafo.__delitem__("joseph"))
-grafo.mostrar()
-print("agregar arista vilca -> vargas", grafo.agregar_arista("vilca", "vargas"))
-listel = grafo.bfs(None, None, "vilca")
-print(listel)
-
-grafo2 = Grafo(True)
-print("agregar vertice A", grafo2.__setitem__("A", 1))
-print("agregar vertice B", grafo2.__setitem__("B", 2))
-print("agregar vertice C", grafo2.__setitem__("C", 3))
-print("agregar vertice D", grafo2.__setitem__("D", 4))
-print("agregar vertice E", grafo2.__setitem__("E", 5))
-
-print("agregar arista A-C", grafo2.agregar_arista("A", "C"))
-print("agregar arista B-A", grafo2.agregar_arista("B", "A"))
-print("agregar arista D-C", grafo2.agregar_arista("D", "C"))
-print("agregar arista C-E", grafo2.agregar_arista("C", "E"))
-
-l = grafo2.bfs(None, None, "A")
-print(l)
-l = grafo2.bfs(None, None, "B")
-print(l)
-l = grafo2.bfs(None, None, "E")
-print(l)
-def parar(vertice, padre, orden, extra):
-    extra += 1
-    print(extra)
-    if vertice == "E":
-        
-        print("toy aka")
-        print("ACA TERMINA LA ITERACION ")
-        return False
 
 
-conti = 0
-l = grafo2.bfs(parar, conti, "D")
-print(l)
-<<<<<<< HEAD
-print(conti)
-||||||| merged common ancestors
-print(conti)
-=======
-print(conti)
-grafo3 = Grafo(False)
-valor = 3
-grafo3.__setitem__("0", valor)
-grafo3.__setitem__("1", valor)
-grafo3.__setitem__("2", valor)
-grafo3.__setitem__("3", valor)
-grafo3.__setitem__("4", valor)
-grafo3.__setitem__("5", valor)
-#grafo3.__setitem__("I", valor)
-
-print("agrego 0 -1")
-print("agrego 0 -4")
-print("agrego 1 -4")
-print("agrego 1 -2")
-print("agrego 2 -3")
-print("agrego 2 -5")
-grafo3.agregar_arista("0", "1")
-grafo3.agregar_arista("0", "4")
-grafo3.agregar_arista("1", "4")
-grafo3.agregar_arista("1", "2")
-grafo3.agregar_arista("2", "3")
-grafo3.agregar_arista("2", "5")
-
-grafo3.mostrar()
-# (,)
-T = grafo3.bfs(None, None, "1")
-print("PADRES:", T[0])
-print("ORDEN:", T[1])
-'''
 grafo3 = Grafo(True)
 valor = 122
 grafo3.__setitem__("0", valor)

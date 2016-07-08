@@ -354,14 +354,13 @@ class Grafo(object):
         heap = []
         c = {}
         for x in self.__vertices:
-            grafoni.__setitem__(x)
+            grafoni.__setitem__(x, None)
             c[x] = x
             
         self.limpiar_aristas()
         for arista in self.__aristas:
             heapq.heappush(heap, (self.__aristas[arista], arista))
-            
-        print(heap)
+        
         return grafoni
 
 
@@ -384,6 +383,35 @@ class Grafo(object):
         print("CANTIDAD E ARISTAS PRRO", len(self.__aristas))
 
 '''
+def encontrar_ciclo(actual, padre, distancias, listo):
+    if  padre.get(actual) != None:
+        if padre[actual] == listo[len(listo)-1]:
+            listo.append(actual)
+    #print("lISTO",len(listo))
+    if actual in padre : 
+       # listo.append(actual)
+        return False
+    
+    
+
+def ciclo(grafo, linea):
+    k = int(linea[1:])
+    estado = {"fin" : False}
+    #final = ["not found", None, k]
+    listo = []
+    vertices = grafo.keys()
+    for vertice in vertices:
+        camino = grafo.dfs(encontrar_ciclo, listo, vertice)
+        #padres = camino[0]
+    
+       # print(len(listo))
+        if len(listo) == k :
+            print(listo)
+            return 0
+        listo = []
+
+
+
 grafo3 = Grafo(True)
 valor = 122
 grafo3.__setitem__("0", valor)

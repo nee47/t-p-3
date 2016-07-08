@@ -249,6 +249,7 @@ class Grafo(object):
         en caso de aplicarse a un grafo dirigido se lanzara TypeError'''
         if self.__dirigido :
             raise TypeError
+
         compo_conexas = []
         guardado = {}
         for v in self.__vertices:
@@ -298,7 +299,7 @@ class Grafo(object):
                 if u[1] != origen :
                     camino[u[1]] = u[0],u[2]
                     if u[1] == destino:
-                        #print("ya lo encontre")
+                        
                         break
                 cantidad += 1
                 if heuristica and heuristica(u[1], destino) > distancia[u[1]]:
@@ -326,9 +327,6 @@ class Grafo(object):
         '''Calcula el Arbol de Tendido Minimo (MST) para un grafo no dirigido. En caso de ser dirigido, lanza una excepcion.
         Devuelve: un nuevo grafo, con los mismos vertices que el original, pero en forma de MST.'''
         
-        #grafoni = Grafo()
-        
-        #return grafoni
         " " 
 
     def centralidad(self):
@@ -350,9 +348,12 @@ class Grafo(object):
         i = 0
         for vertice in self.__vertices:
             #if vec[i] 
+            
             recorrido = self.reconstruir_camino(dic_caminos[vertice], vertice, vec[i])
+            anterior = len(recorrido)
             for v in recorrido:
-                centra[v] += 1 
+                centra[v] +=  anterior 
+                anterior -= 1
             i += 1
             
         return centra
@@ -427,8 +428,6 @@ def evaluar(grafo, accion, linea, pRank):
     elif accion == "distancias":
         distancias(grafo, linea)
     
-    elif accion == "ciclo":
-        ciclo(grafo, linea)
 
     elif accion == "diametro":
         diametro(grafo)
@@ -577,34 +576,6 @@ def distancias(grafo, linea):
         
 
 # 0 = artic , 1 = padre, 2 = k
-def encontrar_ciclo(actual, padre, distancias, listo):
-    if  padre.get(actual) != None:
-        if padre[actual] == listo[len(listo)-1]:
-            listo.append(actual)
-    #print("lISTO",len(listo))
-    if actual in padre : 
-       # listo.append(actual)
-        return False
-    
-    
-
-def ciclo(grafo, linea):
-    k = int(linea[1:])
-    estado = {"fin" : False}
-    #final = ["not found", None, k]
-    listo = []
-    vertices = grafo.keys()
-    for vertice in vertices:
-        camino = grafo.dfs(encontrar_ciclo, listo, vertice)
-        #padres = camino[0]
-    
-       # print(len(listo))
-        if len(listo) == k :
-            print(listo)
-            return 0
-        listo = []
-    
-    print("NEL")
 
 def diametro(grafo):
     inicial = time()
@@ -620,15 +591,17 @@ def diametro(grafo):
     maximo = 0
     i = 0
     max_recorrido = []
-    for v in vertices:
+    for v in vertices: # O(V )
+        
         camino = grafo.reconstruir_camino(v_recorridos[i], v, vv[i])
+        
         l = len(camino)
         if l > maximo :
             maximo = l
             max_recorrido = camino 
         i += 1
 
-    print("Longitu maczima", maximo)
+    print("Diametro :", maximo)
     print(max_recorrido)
     t_ejecucion = time() - inicial
     print("tiempo de ejecucion es %0.10f" % t_ejecucion)

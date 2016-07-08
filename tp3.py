@@ -1,4 +1,7 @@
 # Tp3
+# 97240 -James, Vilca
+# 2016 
+
 import sys
 import heapq
 from time import time
@@ -41,9 +44,6 @@ def detener(actual, padre, orden, fin):
         if actual == fin:
             return False;
 
-# pila = Pila()
-# if pila.vacia()
-# pila->destruir()
 class Grafo(object):
     '''Clase que representa un grafo. El grafo puede ser dirigido, o no, y puede no indicarsele peso a las aristas
     (se comportara como peso = 1). Implementado como "diccionario de diccionarios"'''
@@ -54,7 +54,7 @@ class Grafo(object):
         self.__datos = {}
         self.__dirigido = es_dirigido
         self.__aristas = {}
-    #  { joseph : {Vilca: peso} }
+
     def __len__(self):
         '''Devuelve la cantidad de vertices del grafo'''
         return len(self.__vertices)
@@ -111,7 +111,7 @@ class Grafo(object):
         self.__aristas[(desde, hasta)] = peso 
         if not self.__dirigido :
             self.__vertices[hasta].append(desde)
-            self.__aristas[(desde, hasta)] = peso
+            self.__aristas[(hasta, desde)] = peso
         return True
 
     def borrar_arista(self, desde, hasta):
@@ -124,7 +124,6 @@ class Grafo(object):
         if not self.__dirigido :
             self.__vertices[hasta].remove(desde)
             self.__aristas[(hasta, desde)]
-        #del self.__aristas[desde][hasta]
 
     def obtener_peso_arista(self, desde, hasta):
         '''Obtiene el peso de la arista que va desde el vertice 'desde', hasta el vertice 'hasta'. Parametros:
@@ -158,51 +157,59 @@ class Grafo(object):
                 - 'orden' es un diccionario que indica para un identificador, cual es su orden en el recorrido BFS
         '''
         visitados = {}
+        distancia = {}
         for elemento in self.__vertices:
             visitados[elemento] = False
+            distancia[elemento] = 9999
+        
         fin = False
         cola = Cola()
         padre = {}
         orden =  {}    
-        ordencito = 0
+        etapa = 0
         if inicio :
             padre[inicio] = None
             cola.encolar(inicio)
+        else:
+            for vertice in self.__vertices:
+                cola.encolar(vertice)
 
+        distancia[inicio] = 0 
         while not cola.vacia() and not fin: 
             v = cola.desencolar()
             if visitar:
-                if visitar(v, padre, orden, extra) == False:
+                if visitar(v, padre, distancia, extra) == False:
                     fin = True
-            #orden[v] = ordencito
-            #ordencito += 1
             if not visitados[v]:
-                orden[v] = ordencito
-                ordencito += 1
+                orden[v] = etapa
+                etapa += 1
                 visitados[v] = True
                 if fin:
                     continue
                 for w in self.__vertices[v]:
                     if not visitados[w]:
+                        if distancia[w] > distancia[v] +1:
+                            distancia[w] = distancia[v] + 1
                         cola.encolar(w)
                         padre[w] = v
 
-        return (padre, orden)
+        return (padre, orden, distancia)
 
-    def dfs_visitar(self, w, padre, orden, ordencito, visitados, inicio):
+    def dfs_visitar(self, w, padre, orden, etapa, visitados, inicio, visitar, extra):
         visitados[w] = True
-        ordencito[0] += 1
-        orden[w] = ordencito[0]
+        etapa[0] += 1
+        orden[w] = etapa[0]
+        if visitar and visitar(w, padre, orden, extra) == False:
+            return 1
+            
         for v in self.__vertices[w]:
             if not visitados[v]:
                 if w != inicio:
                     padre[v] = w
                 else:
                     padre[v] = None
-                self.dfs_visitar(v, padre, orden, ordencito, visitados, inicio )
-        #visitados[w] = True
-        #ordencito[0] += 1       
-    #Aun no funciona    
+                self.dfs_visitar(v, padre, orden, etapa, visitados, inicio, visitar, extra )
+
     def dfs(self, visitar = visitar_nulo, extra = None, inicio=None):
         '''Realiza un recorrido DFS dentro del grafo, aplicando la funcion pasada por parametro en cada vertice visitado.
         - visitar: una funcion cuya firma sea del tipo: 
@@ -222,24 +229,40 @@ class Grafo(object):
         '''
         visitados = {}
         for clave in self.__vertices:
-            #print("clave", clave)
             visitados[clave] = False
-        #print(visitados)
         padre = {}
         orden = {}
-        ordencito = [0]
+        etapa = [0]
         
-        #if not visitados[w]:
-        self.dfs_visitar(inicio, padre, orden, ordencito, visitados, inicio)   
+        self.dfs_visitar(inicio, padre, orden, etapa, visitados, inicio, visitar, extra)   
 
         return (padre, orden)
+
+    def __compo_nexas(self, actual, padre, orden, extra):
+        extra.append(actual)
+        return True
+
     
     def componentes_conexas(self):
         '''Devuelve una lista de listas con componentes conexas. Cada componente conexa es representada con una lista, con los identificadores de sus vertices.
         Solamente tiene sentido de aplicar en grafos no dirigidos, por lo que
         en caso de aplicarse a un grafo dirigido se lanzara TypeError'''
-        raise NotImplementedError()
-    
+        if self.__dirigido :
+            raise TypeError
+        compo_conexas = []
+        guardado = {}
+        for v in self.__vertices:
+            guardado[v] = False 
+
+        for v in self.__vertices:
+            lista = []
+            if not guardado[v] :
+                self.dfs(self.__compo_nexas, lista, v)
+                for item in lista:
+                    guardado[item] = True
+                compo_conexas.append(lista)
+        
+        return compo_conexas
 
     def camino_minimo(self, origen, destino, heuristica=heuristica_nula):
         '''Devuelve el recorrido minimo desde el origen hasta el destino, aplicando el algoritmo de Dijkstra, o bien
@@ -251,116 +274,122 @@ class Grafo(object):
             - Listado de vertices (identificadores) ordenado con el recorrido, incluyendo a los vertices de origen y destino. 
             En caso que no exista camino entre el origen y el destino, se devuelve None. 
         '''
-        #improvisando
-        #fin improvisando
         visitado = {}
         distancia = {}
         heap_minimo = []
-        pe = 0
-        camino = {} # {'A': (peso, Vertice , padre)}
+      
+        camino = {} 
         for elemento in self.__vertices:
             visitado[elemento] = False
             if not (origen, elemento) in self.__aristas:
                 distancia[elemento] =  999
             else:
                 distancia[elemento] = self.__aristas[(origen, elemento)]
-        
+                
         heapq.heappush(heap_minimo, (0, origen, None))
         cantidad = 0
         distancia[origen] = 0;
-        camino[origen] = (1, None)
+        camino[origen] = (0, None)
         while heap_minimo :
             u = heapq.heappop(heap_minimo)
-            if pe < u[0]:
-                pe = u[0]
-
+            
             if not visitado[u[1]]:
                 visitado[u[1]] = True
                 if u[1] != origen :
                     camino[u[1]] = u[0],u[2]
                     if u[1] == destino:
-                        print("ya lo encontre")
+                        #print("ya lo encontre")
                         break
                 cantidad += 1
                 if heuristica and heuristica(u[1], destino) > distancia[u[1]]:
                     continue
                 for w in self.__vertices[u[1]]:
-                        
-                 #       peso = self.__aristas[(u[1], w)] + distancia[u[1]]
+                
                     if not visitado[w]:
                         if distancia[w] >= distancia[u[1]]+ self.__aristas[(u[1], w)] :
                             distancia[w] = distancia[u[1]] + self.__aristas[(u[1], w)]
-                            # camino[w] = u[0],u[2]
-                            heapq.heappush(heap_minimo, (distancia[w],w, u[1]))
-                    
                             
+                            heapq.heappush(heap_minimo, (distancia[w],w, u[1]))
+                            
+        # Se devuelven todos los caminos
+        if not destino :
+            return camino
         
-        print("maxima distancia ", pe)
-        # {'H:(0, A)  }
-        print("distancia destino", distancia[destino], "cantidad", cantidad)
+        # Se devuelve el camino en particular
         if destino not in camino :
-            print("no se encuentra camino")
             return None
-       # print(camino)
-        #return None
-        lista_camino = []
-        actual = destino
-        print("llegue con peso", camino.get(actual)[0])
-        while actual :
-            #print(actual)
-            lista_camino.insert(0, actual)
-            #print(actual)
-            c = camino.get(actual)
-            if c : 
-                actual = c[1]
-            else : actual = None
-        #print("Distancias", distancia)
-        return lista_camino
- 
+            
+        return self.reconstruir_camino(camino, origen, destino)
+
     
     def mst(self):
         '''Calcula el Arbol de Tendido Minimo (MST) para un grafo no dirigido. En caso de ser dirigido, lanza una excepcion.
         Devuelve: un nuevo grafo, con los mismos vertices que el original, pero en forma de MST.'''
-        raise NotImplementedError()
-    
-    #  {clave : [clave1, clave2, clave3]} 
-    #  {clave : {Clave : peso1} }
-    def mostrar(self):
-        #print("GRAFO VERTICES", self.__vertices)
-        #print("GRAFO DATOS", self.__datos)
-        #print("GRAFO ARISTAS", self.__aristas)
-        print("cantidad de vertices ", self.__len__())
-        ## extra
-        cont =0 
-        cant = 0
-        #for cada_elemento in self.__aristas:
-            #if cada_elemento[0] ==  "Argentina" and cada_elemento[1] == "polacos":
-                #print(cada_elemento) 
-            #if cant == 15: break
-            #cant += 1
-        print("cantidad de aritas con mas de 1 elemento", cant)
-       # print("longitud de arg con vertices", len(self.__vertices["Argentina"]))
-        #print("longitud de arg con aristas", len(self.__aristas))
-        #fin extra
-        print("cantidad de aristas", len(self.__aristas))
-# Canaan Red Bull New York
+        
+        #grafoni = Grafo()
+        
+        #return grafoni
+        " " 
 
+    def centralidad(self):
+        centra = {} 
+        guardado = {}
+        for vertice in self.__vertices:
+            guardado[vertice] = False
+            centra[vertice] = 0 
+            
+        vector_caminos = []
+        dic_caminos = {}
+        heap = []
+        vec = []
+        for vertice in self.__vertices: # O(V(A LOG V))
+                camino = self.camino_minimo(vertice, None, None)
+                dic_caminos[vertice] = camino
+                vec.insert(0, vertice)
+                
+        i = 0
+        for vertice in self.__vertices:
+            #if vec[i] 
+            recorrido = self.reconstruir_camino(dic_caminos[vertice], vertice, vec[i])
+            for v in recorrido:
+                centra[v] += 1 
+            i += 1
+            
+        return centra
+        
+    def reconstruir_camino(self, recorrido, inicio, final):
+       
+        actual = final
+        lista = []
+
+        while actual:
+            lista.insert(0, actual)
+            c = recorrido.get(actual)
+            if c :
+                actual = c[1]
+            else :
+                actual = None
+            
+        return lista
+        
+        
+ 
+# Convierte las lineas de un archivo parseado en forma (a1<a2>a3>...>an) en una
+# lista con esas lineas. [a1, a2, a3,...,an]
 
 def lista_lineas(archivo, opcion= False):
-    linea = archivo.readline()
-	#longitud = len(linea)
+    linea = archivo.readline()	
     vec_linea = []
     if opcion == True: 
         vec_linea = linea.split("<")
-    #print(vec_lineas)
     fin = vec_linea[0].find(">")
     vec_linea.insert(0, vec_linea[0][0: fin])
     if opcion == True: vec_linea[1] = vec_linea[1][fin+1:]
-    #return vec_linea
-    #dic[]
     return vec_linea
 
 
+# Dada una ruta de archivo una cantidad y el grafo vacio, lo carga con n 
+# articulos. 
 def cargar_grafo(grafo, ruta, n):
     archivo_txt = open(ruta, "r")
     vec = []
@@ -371,25 +400,41 @@ def cargar_grafo(grafo, ruta, n):
         grafo.__setitem__(vec[0], 0)
         
     archivo_txt.close()
-  #  archivo_txt = open(ruta, "r")
     vertices = grafo.keys()
     for v in vertices:
         for w in dic[v]:
             if grafo.__contains__(w):
                 grafo.agregar_arista(v, w)
 
+# Escoge la funcion pasada por parametro y ejecuta esa funcion
+# En caso de no existir el comando o escribirlo mal, se informara por pantalla
 def evaluar(grafo, accion, linea, pRank):
     if accion == "camino_mas_corto":
         camino_corto(grafo, linea)
-    # print(linea)
-    if accion == "calcular_pagerank":
+ 
+    elif accion == "calcular_pagerank":
         calcular_pagerank_k(grafo, linea, pRank)
     
-    if accion == "mostrar_pagerank":
+    elif accion == "mostrar_pagerank":
         mostrar_pagerank(grafo, linea, pRank)
 
-    if accion == "mostrar_top_pagerank":
+    elif accion == "mostrar_top_pagerank":
         mostrar_top_pagerank(grafo, linea, pRank)
+
+    elif accion == "centralidad":
+        centralidad(grafo, linea)
+
+    elif accion == "distancias":
+        distancias(grafo, linea)
+    
+    elif accion == "ciclo":
+        ciclo(grafo, linea)
+
+    elif accion == "diametro":
+        diametro(grafo)
+    else:
+        print("Comando no reconocido")
+
 
 def camino_corto(grafo, origen_destino):
     aux = origen_destino.split(",")
@@ -402,49 +447,57 @@ def camino_corto(grafo, origen_destino):
         return 1
     inicial = time()
     l = grafo.camino_minimo(aux[0], aux[1], None)
-    print(l)
+    salida = ""
+    for articulo in l :
+        salida += "->"+articulo
+
+    print(salida[2:])
     tiempo_ejecucion  = time() - inicial
     print("el tiempo de la busqueda fue %0.10f s"% tiempo_ejecucion)
+
+#0.85
 d = 0.85
 
 
 def pagerank(grafo, pRank, k):
-   # pr = (1-d)/N  + d()
     vertices = grafo.keys()
     N= len(vertices)
-    #pRank = {}
+
     for x in vertices : 
-        #if len(grafo.adyacentes(x)) == 0 :
         pRank[x] = (1-d)/N
      
-    #max = 0
     for i in range(k):
+        pRank_auxiliar = {}
+        for x in vertices : 
+            pRank_auxiliar[x] = (1-d)/N
+
         for x in vertices :
-            suma = 0
-            L = len(grafo.adyacentes(x))
-            for adyacentes in grafo.adyacentes(x):
-                pRank[adyacentes] += d*pRank[x] / L
- 
-                #pRank[] = (suma*d) + ((1-d)/N)  +d  
-               # if pRank[adyacentes] > max :
-                #    max = pRank[adyacentes]
-
-
-    
+            adya = grafo.adyacentes(x)
+            L = len(adya)
+            for adyacentes in adya:
+                pRank_auxiliar[adyacentes] += d*pRank[x] / L
+              #  pRank[adyacentes] = pRank_auxiliar[adyacentes]
+                            
+        for verti in pRank:
+            pRank[verti] = pRank_auxiliar[verti]
+  
         
+            
 def calcular_pagerank_k(grafo, linea, pRank):
     k = int(linea[1:])
     inicial = time()
-    #pRank = {}
     pagerank(grafo, pRank, k)
     t_ejecucion = time() - inicial
     print("Tiempo de ejecucion calcular pr FUE %0.10f" % t_ejecucion)
-    #print(pRank)
+    
         
 def mostrar_pagerank(grafo, linea, pRank):
-    
-#    print("Tiempo de ejecucion calcular pr FUE %0.10f" % t_ejecucion)
-    print("page rank :", pRank[linea[1:]]) 
+    articulo = linea[1:]
+    if not grafo.__contains__(articulo):
+        print("Este articulo no se encuentra")
+        return 1
+
+    print("page rank :", pRank[articulo]) 
 
 
 def mostrar_top_pagerank(grafo, linea, pRank):
@@ -454,22 +507,140 @@ def mostrar_top_pagerank(grafo, linea, pRank):
         print("la cantidad no es valida")
     heap = []
         
-    for vertices in pRank:
-        
-        #if len(heap) <= int(k):
-        if len(heap) <= int(k) or pRank[vertices] > heap[0][0]:
+    for vertices in pRank:        
+        if len(heap) < int(k) or pRank[vertices] > heap[0][0]:
             heapq.heappush(heap, (pRank[vertices], vertices))
             if pRank[vertices] > heap[0][0]:
                 heapq.heappop(heap)
-
+    pila = Pila()
     while len(heap) != 0 :
-        print(heapq.heappop(heap))
+        salida = heapq.heappop(heap)
+        linea_salida = salida[1]+" : "+str(salida[0]) 
+        pila.apilar(linea_salida)
+    indice = 1
+    while not pila.vacia():
+        print(str(indice)+". "+pila.desapilar())
+        indice += 1
+
+
+def centralidad(grafo, linea):
+    k = int(linea[1:])
+    inicial = time()
+    vertices = grafo.keys()
+    centra =  grafo.centralidad()
+    heap = []
+    heapq.heappush(heap, (0, None))
+    for item in centra:
+        if heap[0][0] < centra[item]:
+            heapq.heappush(heap, (centra[item], item))
+    
+    t_ejecucion = time() - inicial 
+    # 0          k      n
+    l = len(grafo.keys())
+    for i in range(l) :
+        par = heapq.heappop(heap)
+        if i >= l-k:
+            print(par[0], " : ", par[1])
+    print("tiempo de ejecucion es %0.10f"% t_ejecucion)
+
+
+def distancias(grafo, linea):
+    
+    articulo = linea[1:]
+    if not grafo.__contains__(articulo):
+        print("No se encuentra el articulo")
+        return 1
+    dist = {}
+    
+    recorrido = grafo.bfs(None, None, articulo)
+    
+    maximo = 0
+    distancias = recorrido[2]
+    print("len distancias ", len(distancias))
+    for vertice in distancias:
+        d = distancias[vertice]
+        if d > maximo and d != 9999 :
+            maximo = d
+
+        if not d in dist:
+            dist[d] = []
+        else:
+            dist[d].append(vertice)
+
+    salida = "" 
+    for i  in range(1, maximo):
+        print("A DISTANCIA: %d "% i)
+        for v in dist[i]:
+            salida += v+", "
+ 
+        print(salida)
+        
+
+# 0 = artic , 1 = padre, 2 = k
+def encontrar_ciclo(actual, padre, distancias, listo):
+    if  padre.get(actual) != None:
+        if padre[actual] == listo[len(listo)-1]:
+            listo.append(actual)
+    #print("lISTO",len(listo))
+    if actual in padre : 
+       # listo.append(actual)
+        return False
+    
+    
+
+def ciclo(grafo, linea):
+    k = int(linea[1:])
+    estado = {"fin" : False}
+    #final = ["not found", None, k]
+    listo = []
+    vertices = grafo.keys()
+    for vertice in vertices:
+        camino = grafo.dfs(encontrar_ciclo, listo, vertice)
+        #padres = camino[0]
+    
+       # print(len(listo))
+        if len(listo) == k :
+            print(listo)
+            return 0
+        listo = []
+    
+    print("NEL")
+
+def diametro(grafo):
+    inicial = time()
+    
+    vertices = grafo.keys()
+    v_recorridos =  []
+    vv = []
+    for vertice in vertices:
+        recorrido = grafo.camino_minimo(vertice, None)
+        v_recorridos.append(recorrido)
+        vv.insert(0, vertice)
+        
+    maximo = 0
+    i = 0
+    max_recorrido = []
+    for v in vertices:
+        camino = grafo.reconstruir_camino(v_recorridos[i], v, vv[i])
+        l = len(camino)
+        if l > maximo :
+            maximo = l
+            max_recorrido = camino 
+        i += 1
+
+    print("Longitu maczima", maximo)
+    print(max_recorrido)
+    t_ejecucion = time() - inicial
+    print("tiempo de ejecucion es %0.10f" % t_ejecucion)
+
 
 # Main
 # 10 000 - 3.39s 
 # 2da imple 15 000 - 5.9s
 
 def tp3_main():
+    print("TP3 Modelacion de internet. Wikipedia")
+
     if len(sys.argv) !=  3:
         print("Uso : ./tp3.py <archivo> <cantidad>")
         return 1
@@ -490,8 +661,6 @@ def tp3_main():
     grafo = Grafo(True)
     n = int(sys.argv[2])
     cargar_grafo(grafo, ruta, n )
-    #grafo.mostrar()
-    #print("TERMINE DE CARGAR EL GRAFO ")
     pRank = {}
     tiempo_ejecucion = time()- inicial
     print("El tiempo de carga fue %0.10f s"% tiempo_ejecucion)
@@ -505,6 +674,5 @@ def tp3_main():
         comando = input()
         
 
-print("empezando")
-tp3_main()
 
+tp3_main()

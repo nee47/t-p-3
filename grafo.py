@@ -103,11 +103,15 @@ class Grafo(object):
         '''
         if desde == hasta:
             return False
+        
+        wardian =desde+hasta
         self.__vertices[desde].append(hasta)
+        #self.__aristas[wardian] = peso
         self.__aristas[(desde, hasta)] = peso 
         if not self.__dirigido :
             self.__vertices[hasta].append(desde)
-            self.__aristas[(desde, hasta)] = peso
+            self.__aristas[(hasta, desde)] = peso
+            #self.__aristas[hasta+desde] = peso
         return True
 
     def borrar_arista(self, desde, hasta):
@@ -154,17 +158,20 @@ class Grafo(object):
                 - 'orden' es un diccionario que indica para un identificador, cual es su orden en el recorrido BFS
         '''
         visitados = {}
+        distancia = {}
         for elemento in self.__vertices:
             visitados[elemento] = False
+            distancia[elemento] = 999
+        
         fin = False
         cola = Cola()
         padre = {}
         orden =  {}    
-        ordencito = 0
+        etapa = 0
         if inicio :
             padre[inicio] = None
             cola.encolar(inicio)
-
+        distancia[inicio] = 0 
         while not cola.vacia() and not fin: 
             v = cola.desencolar()
             if visitar:
@@ -173,29 +180,34 @@ class Grafo(object):
             #orden[v] = ordencito
             #ordencito += 1
             if not visitados[v]:
-                orden[v] = ordencito
-                ordencito += 1
+                orden[v] = etapa
+                etapa += 1
                 visitados[v] = True
                 if fin:
                     continue
                 for w in self.__vertices[v]:
                     if not visitados[w]:
+                        if distancia[w] > distancia[v] +1:
+                            distancia[w] = distancia[v] + 1
                         cola.encolar(w)
                         padre[w] = v
 
-        return (padre, orden)
+        return (padre, orden, distancia)
 
-    def dfs_visitar(self, w, padre, orden, ordencito, visitados, inicio):
+    def dfs_visitar(self, w, padre, orden, ordencito, visitados, inicio, visitar, extra):
         visitados[w] = True
         ordencito[0] += 1
         orden[w] = ordencito[0]
+        if visitar and visitar(w, padre, orden, extra) == False:
+            return 1
+
         for v in self.__vertices[w]:
             if not visitados[v]:
                 if w != inicio:
                     padre[v] = w
                 else:
                     padre[v] = None
-                self.dfs_visitar(v, padre, orden, ordencito, visitados, inicio )
+                self.dfs_visitar(v, padre, orden, ordencito, visitados, inicio, visitar, extra )
         #visitados[w] = True
         #ordencito[0] += 1       
     #Aun no funciona    
@@ -226,16 +238,36 @@ class Grafo(object):
         ordencito = [0]
         
         #if not visitados[w]:
-        self.dfs_visitar(inicio, padre, orden, ordencito, visitados, inicio)   
+        self.dfs_visitar(inicio, padre, orden, ordencito, visitados, inicio, visitar, extra)   
 
         return (padre, orden)
     
+    def compo_nexas(self, actual, padre, orden, extra):
+        extra.append(actual)
+        return True
+
     def componentes_conexas(self):
         '''Devuelve una lista de listas con componentes conexas. Cada componente conexa es representada con una lista, con los identificadores de sus vertices.
         Solamente tiene sentido de aplicar en grafos no dirigidos, por lo que
         en caso de aplicarse a un grafo dirigido se lanzara TypeError'''
-        raise NotImplementedError()
-    
+
+        if self.__dirigido :
+            raise TypeError
+        print("\n COMPONEXAS xdXDxXDxd")
+        compo_conexas = []
+        guardado = {}
+        for v in self.__vertices:
+            guardado[v] = False 
+
+        for v in self.__vertices:
+            lista = []
+            if not guardado[v] :
+                self.dfs(self.compo_nexas, lista, v)
+                for item in lista:
+                    guardado[item] = True
+                compo_conexas.append(lista)
+        
+        return compo_conexas
 
     def camino_minimo(self, origen, destino, heuristica=heuristica_nula):
         '''Devuelve el recorrido minimo desde el origen hasta el destino, aplicando el algoritmo de Dijkstra, o bien
@@ -255,32 +287,39 @@ class Grafo(object):
         camino = {} # {'A': (peso, Vertice , padre)}
         for elemento in self.__vertices:
             visitado[elemento] = False
-            distancia[elemento] =  999
+            if not (origen, elemento) in self.__aristas:
+                distancia[elemento] =  999
+            else:
+                distancia[elemento] = self.__aristas[(origen, elemento)]
+                
         heapq.heappush(heap_minimo, (0, origen, None))
         cantidad = 0
         distancia[origen] = 0;
-        camino[origen] = (1, None)
+        camino[origen] = (0, None)
         while heap_minimo :
             u = heapq.heappop(heap_minimo)
+           
             if not visitado[u[1]]:
                 visitado[u[1]] = True
                 if u[1] != origen :
                     camino[u[1]] = u[0],u[2]
                     if u[1] == destino:
+                        #print("ya lo encontre")
                         break
                 cantidad += 1
-                if distancia[u[1]] > 20:
+                if heuristica and heuristica(u[1], destino) > distancia[u[1]]:
                     continue
                 for w in self.__vertices[u[1]]:
+                        
+                 #       peso = self.__aristas[(u[1], w)] + distancia[u[1]]
                     if not visitado[w]:
-                        peso = self.__aristas[(u[1], w)] + distancia[u[1]]
-                        heapq.heappush(heap_minimo, (peso ,
-                                                 w, u[1]))
-                        distancia[w] = distancia[u[1]] +1 #peso
-                    #cantidad += 1
-                        #distancia[]
-        
-        
+                        if distancia[w] >= distancia[u[1]]+ self.__aristas[(u[1], w)] :
+                            distancia[w] = distancia[u[1]] + self.__aristas[(u[1], w)]
+                            # camino[w] = u[0],u[2]
+                            heapq.heappush(heap_minimo, (distancia[w],w, u[1]))
+                            
+        if not destino :
+            return camino
                     
         # {'H:(0, A)  }
         print("distancia destino", distancia[destino], "cantidad", cantidad)
@@ -307,8 +346,35 @@ class Grafo(object):
     def mst(self):
         '''Calcula el Arbol de Tendido Minimo (MST) para un grafo no dirigido. En caso de ser dirigido, lanza una excepcion.
         Devuelve: un nuevo grafo, con los mismos vertices que el original, pero en forma de MST.'''
-        raise NotImplementedError()
+    
+        # implementacion algorito Kruskal
+        
+        grafoni = Grafo()
+        
+        heap = []
+        c = {}
+        for x in self.__vertices:
+            grafoni.__setitem__(x)
+            c[x] = x
+            
+        self.limpiar_aristas()
+        for arista in self.__aristas:
+            heapq.heappush(heap, (self.__aristas[arista], arista))
+            
+        print(heap)
+        return grafoni
 
+
+    def limpiar_aristas(self):
+        borrar = []
+        for v in self.__aristas:
+            if type(v) == type(" "):
+                #print("WA DELETEEAR")
+                borrar.append(v)
+                
+            
+        for v in borrar:
+            del self.__aristas[v]
 
     def mostrar(self):
         print("GRAFO VERTICES", self.__vertices)
@@ -317,7 +383,7 @@ class Grafo(object):
         print("cantidad vertices ", self.__len__())
         print("CANTIDAD E ARISTAS PRRO", len(self.__aristas))
 
-
+'''
 grafo3 = Grafo(True)
 valor = 122
 grafo3.__setitem__("0", valor)
@@ -410,10 +476,77 @@ g_t = g.bfs(None, None, "D")
 
 print("PADRES G_T   :", g_t[0])
 print("ORDEN G_t ", g_t[1])
+print("DISTANCIAS BFS", g_t[2])
 
 g_t = g.dfs(None, None, "D")
 print("PADRES G_T dfs  :", g_t[0])
 print("ORDEN G_t dfs", g_t[1])
 
-cam_min = g.camino_minimo("D","T")
-print("CAMINO MINIMO ",cam_min)
+cam_min = g.camino_minimo("D",None)
+print("\nCAMINO MINIMO ",cam_min)
+'''
+
+grafex = Grafo(False)
+kek = "valor"
+print("grafo set item", grafex.__setitem__("v1", kek))
+print("grafo set item", grafex.__setitem__("v2", kek))
+print("grafo set item", grafex.__setitem__("v3", kek))
+print("grafo set item", grafex.__setitem__("v4", kek))
+print("grafo set item", grafex.__setitem__("v5", kek))
+print("grafo set item", grafex.__setitem__("v6", kek))
+print("grafo set item", grafex.__setitem__("v7", kek))
+print("grafo set item", grafex.__setitem__("v8", kek))
+print("grafo set item", grafex.__setitem__("v9", kek))
+print("grafo set item", grafex.__setitem__("v10", kek))
+print("grafo set item", grafex.__setitem__("v11", kek))
+print("grafo set item", grafex.__setitem__("v12", kek))
+#print("grafo set item", grafex.__setitem__("H", kek))
+
+
+print("arista A-B", grafex.agregar_arista("v1", "v2"))
+print("arista A-B", grafex.agregar_arista("v1", "v3"))
+print("arista A-B", grafex.agregar_arista("v2", "v4"))
+print("arista A-B", grafex.agregar_arista("v2", "v3"))
+print("arista A-B", grafex.agregar_arista("v4", "v5"))
+print("arista A-B", grafex.agregar_arista("v4", "v6"))
+print("arista A-B", grafex.agregar_arista("v5", "v6"))
+print("arista A-B", grafex.agregar_arista("v6", "v7"))
+print("arista A-B", grafex.agregar_arista("v6", "v8"))
+print("arista A-B", grafex.agregar_arista("v7", "v9"))
+print("arista A-B", grafex.agregar_arista("v8", "v9"))
+print("arista A-B", grafex.agregar_arista("v10", "v12"))
+print("arista A-B", grafex.agregar_arista("v11", "v12"))
+print("arista A-B", grafex.agregar_arista("v10", "v11", 5))
+grafex.mostrar()
+
+kamina = grafex.componentes_conexas()
+print(kamina)
+
+grafo = Grafo(False)
+
+print("grafo set item", grafo.__setitem__("v1", kek))
+print("grafo set item", grafo.__setitem__("v2", kek))
+print("grafo set item", grafo.__setitem__("v3", kek))
+print("grafo set item", grafo.__setitem__("v4", kek))
+print("grafo set item", grafo.__setitem__("v5", kek))
+print("grafo set item", grafo.__setitem__("v6", kek))
+print("grafo set item", grafo.__setitem__("v7", kek))
+print("grafo set item", grafo.__setitem__("v8", kek))
+
+print("arista A-B", grafo.agregar_arista("v1", "v2", 1))
+print("arista A-B", grafo.agregar_arista("v1", "v4", 6))
+print("arista A-B", grafo.agregar_arista("v2", "v3", 5))
+print("arista A-B", grafo.agregar_arista("v2", "v5", 3))
+print("arista A-B", grafo.agregar_arista("v1", "v3", 13))
+print("arista A-B", grafo.agregar_arista("v3", "v8", 15))
+print("arista A-B", grafo.agregar_arista("v3", "v5", 4))
+print("arista A-B", grafo.agregar_arista("v4", "v2", 14 ))
+print("arista A-B", grafo.agregar_arista("v6", "v1", 5))
+print("arista A-B", grafo.agregar_arista("v4", "v6", 7))
+print("arista A-B", grafo.agregar_arista("v4", "v7", 9))
+print("arista A-B", grafo.agregar_arista("v6", "v7", 2))
+print("arista A-B", grafo.agregar_arista("v7", "v8", 10))
+print("arista A-B", grafo.agregar_arista("v8", "v5", 5))
+print("arista A-B", grafo.agregar_arista("v6", "v8", 16))
+
+tendido = grafo.mst()

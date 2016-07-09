@@ -444,13 +444,16 @@ def camino_corto(grafo, origen_destino):
     if not grafo.__contains__(aux[0]) or not grafo.__contains__(aux[1]):
         print("Alguno de los articulos no se encuentran")
         return 1
+
     inicial = time()
     l = grafo.camino_minimo(aux[0], aux[1], None)
-    salida = ""
-    for articulo in l :
-        salida += "->"+articulo
-
-    print(salida[2:])
+    if not l: #corregido 
+        print("No hay camino")
+        return 1
+        
+    salida = "->"
+   
+    print(salida.join(l))
     tiempo_ejecucion  = time() - inicial
     print("el tiempo de la busqueda fue %0.10f s"% tiempo_ejecucion)
 
@@ -511,12 +514,15 @@ def mostrar_top_pagerank(grafo, linea, pRank):
             heapq.heappush(heap, (pRank[vertices], vertices))
             if pRank[vertices] > heap[0][0]:
                 heapq.heappop(heap)
+
     pila = Pila()
     while len(heap) != 0 :
+    #for indice in range(int(k)): 
         salida = heapq.heappop(heap)
         linea_salida = salida[1]+" : "+str(salida[0]) 
         pila.apilar(linea_salida)
     indice = 1
+    
     while not pila.vacia():
         print(str(indice)+". "+pila.desapilar())
         indice += 1
@@ -568,10 +574,11 @@ def distancias(grafo, linea):
 
     salida = "" 
     for i  in range(1, maximo):
+        salida = ""
         print("A DISTANCIA: %d "% i)
         for v in dist[i]:
             salida += v+", "
- 
+            
         print(salida)
         
 
